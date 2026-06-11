@@ -1,0 +1,6 @@
+aiogram>=3.4
+requests
+numpy
+Pillow
+pyzbar
+pytesseract
