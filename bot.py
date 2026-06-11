@@ -400,6 +400,16 @@ async def _steps(m: Message, img: Image.Image):
     await m.answer(f"📱 {steps:,} шагов → −{kcal} ккал сожжено. Записано!".replace(",", " "))
 
 # ── ГРУППЫ ────────────────────────────────────────────────────
+@router.message(F.text, F.chat.type.in_({"group", "supergroup"}))
+@router.message(F.text, F.chat.type.in_({"group", "supergroup"}))
+async def text_group(m: Message):
+    if f"@{BOT_USERNAME}" not in (m.text or "").lower():
+        return
+    text = ("Привет! Я считаю калории по фото.\n"
+            "Пришли фото еды или штрих-кода с подписью @caloriiibot.\n"
+            "Личный дневник — напиши мне в личку!")
+    await m.reply(text)
+
 @router.message(F.photo, F.chat.type.in_({"group", "supergroup"}))
 async def photo_group(m: Message, bot: Bot):
     if f"@{BOT_USERNAME}" not in (m.caption or "").lower():
