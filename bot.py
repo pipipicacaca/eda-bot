@@ -724,7 +724,8 @@ async def cmd_challenge(m: Message):
 
 # ── MAIN ──────────────────────────────────────────────────────
 async def main():
-    bot = Bot(BOT_TOKEN, parse_mode="HTML")
+    from aiogram.client.default import DefaultBotProperties
+    bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
     dp  = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
     asyncio.create_task(water_reminder_loop(bot))
