@@ -291,6 +291,19 @@ async def photo_private(m: Message, state: FSMContext, bot: Bot):
             return await m.answer(
                 f"Штрих-код <code>{barcode}</code> не найден.\n"
                 "Добавь вручную: кнопка ✍️ Вручную.", parse_mode="HTML")
+        # Если kcal=0 но БЖУ есть — считаем по формуле Атвотера
+        if prod["kcal"] == 0 and (prod["protein"] or prod["fat"] or prod["carbs"]):
+            prod["kcal"] = round(prod["protein"] * 4 + prod["fat"] * 9 + prod["carbs"] * 4)
+        # Если вообще всё нули — просим ввести вручную
+        if prod["kcal"] == 0 and prod["protein"] == 0 and prod["carbs"] == 0:
+            await state.update_data(manual_name=prod["name"])
+            await state.set_state(St.manual)
+            return await m.answer(
+                f"🍫 Продукт найден: <b>{prod['name']}</b>\n"
+                f"⚠️ КБЖУ в Open Food Facts не заполнены.\n\n"
+                f"Введи вручную: <code>граммы ккал белки жиры углеводы</code>\n"
+                f"Например: <code>11 310 0 0 77</code> (данные на 100 г)",
+                parse_mode="HTML")
         await state.update_data(meal={**prod, "portion": 100})
         await state.set_state(St.grams)
         return await m.answer(
@@ -511,8 +524,17 @@ async def cb_manual(c: CallbackQuery, state: FSMContext):
 
 @router.message(St.manual)
 async def manual_input(m: Message, state: FSMContext):
+    data = await state.get_data()
+    preset_name = data.get("manual_name")  # имя из штрих-кода (если было)
     try:
         parts = m.text.split()
+        # Режим: граммы ккал б ж у (когда имя уже известно из штрих-кода)
+        if preset_name and len(parts) == 5:
+            grams, kcal, p, f_, c_ = map(float, parts)
+            save_meal(m.from_user.id, preset_name, grams, kcal, p, f_, c_)
+            await m.answer(f"✅ {preset_name}, {grams:.0f} г ({kcal*grams/100:.0f} ккал)")
+            await state.clear()
+            return
         if len(parts) >= 6:
             nums = list(map(float, parts[-5:]))
             name = " ".join(parts[:-5])
